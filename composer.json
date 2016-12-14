@@ -1,0 +1,15 @@
+{
+	"name": "infrajs/mark",
+	"homepage":"https://github.com/infrajs/mark",
+	"license": "GPL3",
+	"autoload": {
+		"psr-4": { "infrajs\\mark\\": "" }
+	},
+	"require":{
+		"infrajs/once":"~1",
+		"infrajs/sequence":"~1",
+		"infrajs/load":"~1",
+		"infrajs/each":"~1",
+		"infrajs/path":"~1"
+	}
+}
