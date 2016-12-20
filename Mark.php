@@ -35,35 +35,42 @@ class Mark
 	public $notice = '';//Последнее Сообщение о проблеме
 	public $error = '';//Последнее Сообщение о проблеме
 	
-	public $mark = ''; //Если были внесены изменения то тут хранится новая метка
+	public $mark = false; //Если были внесены изменения то тут хранится новая метка
 	public $data = array();
-	public $origmark = ''; //Старая метка для массива данных
-	public $origdata = array();
-	
-	
-	public $restore = false; //Метка что данные были восстановлены
-	public $change = false; //Метка было ли изменение данных
+	public $checkchange = false; //Метка было ли изменение данных
 	public $len = 2; //Хэшмарк стартовая длина
 	public $raise = 6; //Хэшмарк На сколько символов разрешено увеличивать хэш
 	public $dir = '~.marks/'; //Имя дирректорию где хранятся метки
-	public $checkfail = false; //Результат последней проверки данных, были ли ошибки
+	public $checkmark = ''; //Старая метка для массива данных
+	public $checkdata = false; //Результат последней проверки данных, были ли ошибки
 	public function getVal()
 	{
+		if ($this->mark === false) {
+			if ($this->checkdata) {//Восстановлены или устанавливаются хоть какие-то данные
+				if ($this->checkmark) { //Что-то восстановленное
+					if ($this->checkchange) { //Были какие-то установки
+						$this->mark = $this->makeMark($this->data);
+					} else {
+						$this->mark = $this->checkmark;
+					}
+				} else { //Что-то новое
+					$this->mark = $this->makeMark($this->data);
+				}
+			} else { //Всё определено по умолчанию
+				$this->mark = '';
+			}
+		}
 		return $this->mark;
 	}
 	public function getData($newdata = null)
 	{
 		return $this->data;
 	}
-	public function setData($newdata, $change = true)
+	public function setData($newdata, $checkmark = false, $checkchange = false)
 	{
-		$this->data = $this->check($newdata);
-		if($change || $this->checkfail) {
-			$this->mark = $this->makeMark($this->data);
-		} else {
-			$this->mark = $this->origmark;
-		}
-		return $this->mark;
+		$this->mark = false;
+		$this->data = $newdata; //Это разрешае взаимный вызов в определяющих функциях в add при правильном порядке dependencies. в region можно обратиться к lang.
+		$this->data = $this->check($newdata, $checkmark, $checkchange);
 	}
 	private $props = array();
 	public function add($name, $fndef, $fncheck)
@@ -73,16 +80,17 @@ class Mark
 			'fncheck' => $fncheck
 		);
 	}
-	public function check($data)
+	public function check(&$data, $checkmark, $checkchange)
 	{
-		$this->checkfail = false;
+		$this->checkmark = $checkmark;
+		$this->checkdata = !!$data;
+		$this->checkchange = $checkchange;
 		if (!is_array($data)) $data = array();
 		foreach ($data as $k => $v) {
 			if (!isset($this->props[$k])) unset($data[$k]);
 		}
 		foreach ($this->props as $k => $v) {
 			if (!isset($data[$k]) || !$v['fncheck']($data[$k])) {
-				$this->checkfail = true;
 				$data[$k] = $v['fndef']();
 			}
 		}
@@ -90,32 +98,32 @@ class Mark
 	}
 	public function setVal($mark)
 	{
+		//Восстанавливаем метку по переданному значению
 		$mark = preg_replace("/:(.+)::\./U", ":$1::$1.", $mark);
 		$r = explode($this->sym, $mark);
-		$this->restore = false;
-		$this->origmark = array_shift($r);
-		$this->origdata = array();
-		if ($this->origmark != '') {
-			$src=Path::theme($this->dir.$this->origmark.'.json');
+		$checkmark = array_shift($r);
+		$origdata = array();
+		if ($checkmark != '') {
+			$src=Path::theme($this->dir.$checkmark.'.json');
 			if ($src) {
 				$data = file_get_contents($src);
 				$data = Load::json_decode($data);
-				$this->restore = true;
 			} else {
-				$data = false;
+				$data = array();
 			}
 
 			if ($data && is_array($data['data']) && $data['time']) {
-				$this->origdata = $data['data'];
+				$origdata = $data['data'];
 			}
 		}
 	
-		$data = $this->origdata;
+		$data = $origdata; //Восстановили старые значения (или нет)
 		
 		$add = implode($this->sym, $r);
 		$this->change = false;
 		if ($add !== ''){
 			$this->change = true;
+			$checkmark = false; //Раз мы что-то добавляем старая марка точно не подойдёт
 			$r = explode($this->sym, $add);
 			$l = sizeof($r);
 			if ($this->sym == $this->symeq) {
@@ -136,7 +144,7 @@ class Mark
 				}
 			}
 		}
-		$this->setData($data, $this->change);	
+		$this->setData($data, $checkmark);	
 	}
 	public function __construct($dir)
 	{
