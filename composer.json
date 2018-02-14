@@ -1,7 +1,6 @@
 {
 	"name": "infrajs/mark",
 	"homepage":"https://github.com/infrajs/mark",
-	"license": "GPL3",
 	"autoload": {
 		"psr-4": { "infrajs\\mark\\": "" }
 	},
