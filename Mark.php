@@ -71,6 +71,7 @@ class Mark
 		$this->mark = false;
 		$this->data = $newdata; //Это разрешае взаимный вызов в определяющих функциях в add при правильном порядке dependencies. в region можно обратиться к lang.
 		$this->data = $this->check($newdata, $checkmark, $checkchange);
+		static::rksort($this->data);
 	}
 	private $props = array();
 	public function add($name, $fndef, $fncheck)
@@ -161,7 +162,7 @@ class Mark
 	{
 		
 		if (!$data) return '';
-		self::rksort($data);
+		//self::rksort($data);
 		$key = md5(Load::json_encode($data));
 		$mark = Once::exec($this->dir.$key, function () use ($data, $key) {
 			$raise = $this->raise; //На сколько символов разрешено увеличивать хэш
