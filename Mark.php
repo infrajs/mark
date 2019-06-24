@@ -104,7 +104,13 @@ class Mark
 		$r = explode($this->sym, $mark);
 		$checkmark = array_shift($r);
 		$origdata = array();
-		if ($checkmark != '') {
+		if (!session_id()) session_start();
+		if (isset($_SESSION[$checkmark])) {
+			$data = $_SESSION[$checkmark];
+		} else {
+			$data = array();
+		}
+		/*if ($checkmark != '') {
 			$src=Path::theme($this->dir.$checkmark.'.json');
 			if ($src) {
 				$data = file_get_contents($src);
@@ -118,7 +124,7 @@ class Mark
 			}
 		}
 	
-		$data = $origdata; //Восстановили старые значения (или нет)
+		$data = $origdata; //Восстановили старые значения (или нет)*/
 		
 		$add = implode($this->sym, $r);
 		$this->change = false;
@@ -162,8 +168,13 @@ class Mark
 	{
 		
 		if (!$data) return '';
+
+
 		//self::rksort($data);
 		$key = md5(Load::json_encode($data));
+		if (!session_id()) session_start();
+		$_SESSION[$key] = $data;
+		return $key;
 		$mark = Once::exec($this->dir.$key, function () use ($data, $key) {
 			$raise = $this->raise; //На сколько символов разрешено увеличивать хэш
 
