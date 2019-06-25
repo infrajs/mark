@@ -45,6 +45,7 @@ class Mark
 	public $checkdata = false; //Результат последней проверки данных, были ли ошибки
 	public function getVal()
 	{
+		if (!$this->dir) return false;
 		if ($this->mark === false) {
 			if ($this->checkdata) {//Восстановлены или устанавливаются хоть какие-то данные
 				if ($this->checkmark) { //Что-то восстановленное
@@ -97,20 +98,65 @@ class Mark
 		}
 		return $data;
 	}
+	public function getOrigVal($mark){
+		
+		$mark = preg_replace("/:([^:]+)::\./U", ":$1:$1.", $mark);
+		//$mark = preg_replace("/:(.+)::\./U", ":$1::$1.", $mark);
+		
+		$r = explode($this->sym, $mark);
+		$checkmark = array_shift($r);//НЕ поддерживается
+		$od = [];
+		$unique = [];
+
+		
+		
+		foreach ($r as $k=>$ex) {
+		
+			if (empty($ex)) {
+				unset($r[$k]);
+				continue;
+			}
+			$hash = preg_replace("/=.*$/", '', $ex);
+		
+			foreach ($unique as $oldhash=>$j) {
+				
+				if (strstr($oldhash,$hash) == $oldhash) {
+					if ($k==4) {
+						print_r($r);
+					}
+					unset($r[$unique[$oldhash]]);
+				}
+			}
+			
+			$unique[$hash] = $k;
+		}
+		foreach ($r as $k => $ex) {
+			if(!strstr($ex,'=')) {
+				unset($r[$k]);
+			}
+		}
+		//echo '<pre>';
+		//print_r($r);
+		$mark = implode($this->sym, $r);
+		if ($mark) $mark = ':'.$mark;
+		
+		return $mark;
+	}
 	public function setVal($mark)
 	{
 		//Восстанавливаем метку по переданному значению
-		$mark = preg_replace("/:(.+)::\./U", ":$1::$1.", $mark);
+		//$mark = preg_replace("/:(.+)::\./U", ":$1::$1.", $mark);
+		$mark = preg_replace("/:([^:]+)::\./U", ":$1:$1.", $mark);
 		$r = explode($this->sym, $mark);
 		$checkmark = array_shift($r);
 		$origdata = array();
-		if (!session_id()) session_start();
+		/*if (!session_id()) session_start();
 		if (isset($_SESSION[$checkmark])) {
 			$data = $_SESSION[$checkmark];
 		} else {
 			$data = array();
-		}
-		/*if ($checkmark != '') {
+		}*/
+		if ($checkmark != '') {
 			$src=Path::theme($this->dir.$checkmark.'.json');
 			if ($src) {
 				$data = file_get_contents($src);
@@ -124,7 +170,7 @@ class Mark
 			}
 		}
 	
-		$data = $origdata; //Восстановили старые значения (или нет)*/
+		$data = $origdata; //Восстановили старые значения (или нет)
 		
 		$add = implode($this->sym, $r);
 		$this->change = false;
@@ -153,7 +199,7 @@ class Mark
 		}
 		$this->setData($data, $checkmark);	
 	}
-	public function __construct($dir)
+	public function __construct($dir = false)
 	{
 		$this->dir = $dir;	
 	}
@@ -172,9 +218,9 @@ class Mark
 
 		//self::rksort($data);
 		$key = md5(Load::json_encode($data));
-		if (!session_id()) session_start();
+		/*if (!session_id()) session_start();
 		$_SESSION[$key] = $data;
-		return $key;
+		return $key;*/
 		$mark = Once::exec($this->dir.$key, function () use ($data, $key) {
 			$raise = $this->raise; //На сколько символов разрешено увеличивать хэш
 
