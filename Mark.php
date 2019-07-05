@@ -121,9 +121,6 @@ class Mark
 			foreach ($unique as $oldhash=>$j) {
 				
 				if (strstr($oldhash,$hash) == $oldhash) {
-					if ($k==4) {
-						print_r($r);
-					}
 					unset($r[$unique[$oldhash]]);
 				}
 			}
