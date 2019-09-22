@@ -191,7 +191,7 @@ class Mark
 					$rr = explode($this->symeq, $r[$i], 2);
 					if (!$rr[0]) continue;
 					
-					$rr[0] = mb_strtolower($rr[0]); //Ключ всегда смаленькой буквы
+					Path::$conf["encodelower"]? $rr[0] = mb_strtolower($rr[0]): ''; //Ключ всегда смаленькой буквы
 
 					Sequence::set($data, Sequence::right($rr[0]), $rr[1]);
 				}
