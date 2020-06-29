@@ -1,11 +1,14 @@
 <?php
+
 namespace infrajs\mark;
+
 use infrajs\once\Once;
 use infrajs\sequence\Sequence;
 use infrajs\load\Load;
 use infrajs\each\Each;
 use infrajs\path\Path;
 use infrajs\ans\Ans;
+
 /**
  * Класс обеспечивает негарантированное хранение параметров в экстрокороткой строке из ~2 символов
  * Это работает за счёт сохранения объекта данных в 2х символах, со временем данные этих ~2х символов буду заменены, но нам важно только короткая память
@@ -28,13 +31,13 @@ class Mark
 	//Если метка есть а даных нет считаем что метка устарела.
 	//Недопускаем ситуации что метка появилась до появления привязанных к ней данных
 
-	
+
 	public $add = array();
 	public $isadd = false;
 
-	public $notice = '';//Последнее Сообщение о проблеме
-	public $error = '';//Последнее Сообщение о проблеме
-	
+	public $notice = ''; //Последнее Сообщение о проблеме
+	public $error = ''; //Последнее Сообщение о проблеме
+
 	public $mark = false; //Если были внесены изменения то тут хранится новая метка
 	public $data = array();
 	public $checkchange = false; //Метка было ли изменение данных
@@ -47,7 +50,7 @@ class Mark
 	{
 		if (!$this->dir) return false;
 		if ($this->mark === false) {
-			if ($this->checkdata) {//Восстановлены или устанавливаются хоть какие-то данные
+			if ($this->checkdata) { //Восстановлены или устанавливаются хоть какие-то данные
 				if ($this->checkmark) { //Что-то восстановленное
 					if ($this->checkchange) { //Были какие-то установки
 						$this->mark = $this->makeMark($this->data);
@@ -98,45 +101,46 @@ class Mark
 		}
 		return $data;
 	}
-	public function getOrigVal($mark){
-		
+	public function getOrigVal($mark)
+	{
+
 		$mark = preg_replace("/:([^:]+)::\./U", ":$1:$1.", $mark);
 		//$mark = preg_replace("/:(.+)::\./U", ":$1::$1.", $mark);
-		
+
 		$r = explode($this->sym, $mark);
-		$checkmark = array_shift($r);//НЕ поддерживается
+		$checkmark = array_shift($r); //НЕ поддерживается
 		$od = [];
 		$unique = [];
 
-		
-		
-		foreach ($r as $k=>$ex) {
-		
+
+
+		foreach ($r as $k => $ex) {
+
 			if (empty($ex)) {
 				unset($r[$k]);
 				continue;
 			}
 			$hash = preg_replace("/=.*$/", '', $ex);
-		
-			foreach ($unique as $oldhash=>$j) {
-				
-				if (strstr($oldhash,$hash) == $oldhash) {
+
+			foreach ($unique as $oldhash => $j) {
+
+				if (strstr($oldhash, $hash) == $oldhash) {
 					unset($r[$unique[$oldhash]]);
 				}
 			}
-			
+
 			$unique[$hash] = $k;
 		}
 		foreach ($r as $k => $ex) {
-			if(!strstr($ex,'=')) {
+			if (!strstr($ex, '=')) {
 				unset($r[$k]);
 			}
 		}
 		//echo '<pre>';
 		//print_r($r);
 		$mark = implode($this->sym, $r);
-		if ($mark) $mark = ':'.$mark;
-		
+		if ($mark) $mark = ':' . $mark;
+
 		return $mark;
 	}
 	public function setVal($mark)
@@ -154,7 +158,7 @@ class Mark
 			$data = array();
 		}*/
 		if ($checkmark != '') {
-			$src=Path::theme($this->dir.$checkmark.'.json');
+			$src = Path::theme($this->dir . $checkmark . '.json');
 			if ($src) {
 				$data = file_get_contents($src);
 				$data = Load::json_decode($data);
@@ -166,53 +170,54 @@ class Mark
 				$origdata = $data['data'];
 			}
 		}
-	
+
 		$data = $origdata; //Восстановили старые значения (или нет)
-		
+
 		$add = implode($this->sym, $r);
 		$this->change = false;
-		if ($add !== ''){
+		if ($add !== '') {
 			$this->change = true;
 			$checkmark = false; //Раз мы что-то добавляем старая марка точно не подойдёт
 			$r = explode($this->sym, $add);
 			$l = sizeof($r);
 			if ($this->sym == $this->symeq) {
-				if ($l%2) {
+				if ($l % 2) {
 					$l++;
 					$r[] = '';
 				}
 				for ($i = 0; $i < $l; $i = $i + 2) {
 					if (!$r[$i]) continue;
-					Sequence::set($data, Sequence::right($r[$i]), $r[$i+1]);
+					Sequence::set($data, Sequence::right($r[$i]), $r[$i + 1]);
 				}
 			} else {
 				for ($i = 0; $i < $l; $i = $i + 1) {
 					if (!$r[$i]) continue;
 					$rr = explode($this->symeq, $r[$i], 2);
 					if (!$rr[0]) continue;
-					
-					Path::$conf["encodelower"]? $rr[0] = mb_strtolower($rr[0]): ''; //Ключ всегда смаленькой буквы
+
+					Path::$conf["encodelower"] ? $rr[0] = mb_strtolower($rr[0]) : ''; //Ключ всегда смаленькой буквы
 
 					Sequence::set($data, Sequence::right($rr[0]), $rr[1]);
 				}
 			}
 		}
-		$this->setData($data, $checkmark);	
+		$this->setData($data, $checkmark);
 	}
 	public function __construct($dir = false)
 	{
-		$this->dir = $dir;	
+		$this->dir = $dir;
 	}
-	private function rksort(&$data){
+	private function rksort(&$data)
+	{
 		ksort($data);
-		foreach($data as &$v){
-			if(!is_array($v))continue;
-			if(Each::isAssoc($v)===true) self::rksort($v);
+		foreach ($data as &$v) {
+			if (!is_array($v)) continue;
+			if (Each::isAssoc($v) === true) self::rksort($v);
 		}
 	}
 	private function makeMark($data)
 	{
-		
+
 		if (!$data) return '';
 
 
@@ -221,17 +226,17 @@ class Mark
 		/*if (!session_id()) session_start();
 		$_SESSION[$key] = $data;
 		return $key;*/
-		$mark = Once::exec($this->dir.$key, function () use ($data, $key) {
+		$mark = Once::exec($this->dir . $key, function () use ($data, $key) {
 			$raise = $this->raise; //На сколько символов разрешено увеличивать хэш
 
-			$len = $this->len-1;
+			$len = $this->len - 1;
 			while ($len < $this->len + $raise) {
 				$len++;
 				$mark = substr($key, 0, $len);
-				$src = Path::theme($this->dir.$mark.'.json');
+				$src = Path::theme($this->dir . $mark . '.json');
 				if ($src) {
 					$otherdata = file_get_contents($src);
-					$otherdata = Load::json_decode($otherdata, true);	
+					$otherdata = Load::json_decode($otherdata, true);
 				} else {
 					$otherdata = false;
 				}
@@ -251,16 +256,16 @@ class Mark
 				error_log($this->error);
 				$mark = substr($key, 0, $this->len); //перезаписываем первую
 			}
-			
+
 			$src = Path::theme($this->dir);
 			if (!$src) die('Fatal error no marks dir');
-			$src = $src.$mark.'.json';
+			$src = $src . $mark . '.json';
 			$data = Load::json_encode(array(
-				'time'=>time(),
-				'data'=>$data
+				'time' => time(),
+				'data' => $data
 			));
 			$data = file_put_contents($src, $data);
-			
+
 			return $mark;
 		});
 		return $mark;
