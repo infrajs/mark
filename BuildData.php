@@ -14,6 +14,8 @@ class BuildData
 
         $data = [];
         $paths = [];
+
+        
     
         for ($i = 0, $l = sizeof($r); $i < $l; $i++) {
             if (!$r[$i]) continue;
@@ -27,7 +29,10 @@ class BuildData
             $val = isset($rr[1]) ? $rr[1] : null;
             
             if (empty($props[$prop])) continue; //удаляем свойства о которых нет информации
-            if (!$props[$prop]['fncheck']($val)) continue; //Не пройдена проверка, удаляем
+            
+            if ($val!='') { //проверка только если val определено иначе это будет удалением
+                if (!$props[$prop]['fncheck']($val)) continue; //Не пройдена проверка, удаляем
+            }
             
             $paths[$shortpath] = $rightpath; //Сохраняем пути возъимевшие действие
 
