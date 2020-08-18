@@ -16,7 +16,6 @@ class BuildData
         $paths = [];
 
         
-    
         for ($i = 0, $l = sizeof($r); $i < $l; $i++) {
             if (!$r[$i]) continue;
             $rr = explode('=', $r[$i], 2);
@@ -24,21 +23,24 @@ class BuildData
             if (!$rr[0]) continue;
             $shortpath = $rr[0];
             $rightpath = Sequence::right($shortpath);
-            $prop = $rightpath[0];
             
             $val = isset($rr[1]) ? $rr[1] : null;
-            
-            if (empty($props[$prop])) continue; //удаляем свойства о которых нет информации
-            
-            if ($val!='') { //проверка только если val определено иначе это будет удалением
-                if (!$props[$prop]['fncheck']($val)) continue; //Не пройдена проверка, удаляем
-            }
-            
-            $paths[$shortpath] = $rightpath; //Сохраняем пути возъимевшие действие
-
             Sequence::set($data, $rightpath, $val); //Собираем данные. Тут могут быть и null
+            $paths[$shortpath] = $rightpath; //Сохраняем пути возъимевшие действие
             unset($val);
-            
+        }
+        foreach ($paths as $short => $right) {
+            $prop = $right[0];
+            if ( empty($props[$prop]) 
+                || !isset($data[$prop]) 
+                || is_null($data[$prop]) 
+                || $data[$prop] == '' 
+                || !$props[$prop]['fncheck']($data[$prop])
+            ) {
+                unset($data[$prop]); //Может быть 2 шорта на один props
+                unset($paths[$short]);
+                continue;
+            }
         }
         
         ksort($paths);
